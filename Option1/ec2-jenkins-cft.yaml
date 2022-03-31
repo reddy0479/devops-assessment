@@ -1,0 +1,116 @@
+---
+Description: "This will provision a EC2 instance with jenkins configured in it"
+AWSTemplateFormatVersion: "2010-09-09"
+Parameters:
+  SubnetId:
+    Type: String
+    Description: "Public Subnet id in which the ec2 instance has to be provisioned"
+  VpcId:
+    Type: String
+    Description: "The vpc id of the VPC in which the ec2 instance will be created"        
+Mappings:
+  RegionMap:
+    us-east-1:
+      "AMALINUX2" : "ami-035be7bafff33b6b6"
+    us-west-2:
+      "AMALINUX2" : "ami-032509850cf9ee54e"
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - 
+      Label: 
+        default: "Stack Configuration"
+      Parameters:
+        - SubnetId
+        - VpcId
+
+Resources:
+  JenkinsEC2Role:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - ec2.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore
+      Policies:
+        - PolicyName: secretsmanager
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action: "secretsmanager:CreateSecret"
+                Resource: "*"
+      RoleName: JenkinsEC2Role  
+
+  JenkinsEC2SG:
+    Type: "AWS::EC2::SecurityGroup"
+    Properties:
+      GroupDescription: "Security Group for accessing Jenkins EC2 instances"
+      GroupName: "Jenkins-EC2-SG"
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        -
+          CidrIp: 0.0.0.0/0
+          IpProtocol: "8080"
+          ToPort: -1
+          FromPort: -1
+      SecurityGroupEgress:
+        -
+          CidrIp: 0.0.0.0/0
+          ToPort: -1
+          IpProtocol: "-1"
+      Tags:
+        -
+          Key: "Name"
+          Value: "Jenkins-EC2-SG"    
+
+  JenkinsEC2Instance:
+    Type: "AWS::EC2::Instance"
+    Properties:
+      IamInstanceProfile: !Ref JenkinsEC2InstanceProfile
+      ImageId: !FindInMap [RegionMap, !Ref "AWS::Region", AMALINUX2] 
+      InstanceType: t2.micro
+      SecurityGroupIds: 
+        - !Ref JenkinsEC2SG
+      SubnetId: !Ref SubnetId
+      Tags:
+        -
+          Key: "Name"
+          Value: "jenkins-server"
+      UserData:
+        "Fn::Base64":
+          !Sub |
+            #!/bin/bash
+            set -e
+            yum update -y
+            wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+            rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io.key
+            amazon-linux-extras install java-openjdk11 -y
+            yum install jenkins docker -y && sleep 30
+            usermod -aG docker jenkins
+            systemctl enable jenkins && systemctl start jenkins
+            systemctl enable docker && systemctl start docker
+            PWD=$(cat /var/lib/jenkins/secrets/initialAdminPassword)
+            aws secretsmanager create-secret --name JenkinsPwd --description "Jenkins Secret" --secret-string "{\"jenkinsPwd\":\"$PWD\"}" --region us-east-1
+
+  JenkinsEC2InstanceProfile:
+    Type: AWS::IAM::InstanceProfile
+    Properties:
+      Path: "/"
+      Roles:
+      - !Ref JenkinsEC2Role
+      InstanceProfileName: !Join ["-", [!Ref "AWS::StackName", "JenkinsEC2"]]  
+
+Outputs:
+  PublicIP:
+    Description: Public IP of the Jenkins server
+    Value: !GetAtt  [JenkinsEC2Instance, PublicIp]
