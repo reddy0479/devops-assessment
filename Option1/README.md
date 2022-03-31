@@ -73,7 +73,7 @@ aws ec2 describe-instances --filters "Name=tag:Name","Values=jenkins-ec2" | jq -
 3. Select Github Integration, BlueOcean, Docker Plugin.
 4. Choose **Download now and restart after install**.
 
-### Configure Github
+### Github Configuration
 
 In this step we will create a new repo for storing our node js application and we will also integrate that repo with Jenkins server.
 
@@ -81,19 +81,21 @@ In this step we will create a new repo for storing our node js application and w
 
 5. Enable webhooks on your new repo so Jenkins is notified whenever there is a change event in the repo.
 
-    - Browse to newly created GitHub repo and navigate to **Settings** --> **Webhooks** --> **Add webhook**. As shown in this image enter the **Payload URL** as `Jenkins-PublicIP/github-webhook/` leave the remaining fields as it as and select the **Just the push event** option and finally **Update Webhook**
+    - Browse to newly created GitHub repo and navigate to **Settings** --> **Webhooks** --> **Add webhook**. As shown in this image enter the **Payload URL** as `Jenkins-PublicIP:PORT/github-webhook/` leave the remaining fields as it as and select the **Just the push event** option and finally **Update Webhook**
 
-    ![alt text](https://github.com/reddy0479/devops-assessment/blob/test/images/github-webhook.png "Github")
+    ![alt text](https://github.com/reddy0479/devops-assessment/blob/main/images/github-webhook.png "Github")
 
     - Test the Webhook whether it is working fine or not by navigating to recent deliveries tab in the same section and you should see a successful delivery message there if evevrything is good.
 
-    ![alt text](https://github.com/reddy0479/devops-assessment/blob/test/images/github-verify.png "Github")
+    ![alt text](https://github.com/reddy0479/devops-assessment/blob/main/images/github-verify.png "Github")
 
 6. Generate the **Personal Access Token** which is used as a access token for Jenkins integration such that Jenkins will have the ability to send the status of the builds back to the Github. Keep this token handy this will be used in later process.
     
     - In the upper-right corner of any page, click your profile photo, then click Settings --> Developer settings --> Personal access tokens --> Generate new token
 
-    ![alt text](https://github.com/reddy0479/devops-assessment/blob/test/images/github-personal.png "Github")
+    ![alt text](https://github.com/reddy0479/devops-assessment/blob/main/images/github-personal.png "Github")
+
+     ![alt text](https://github.com/reddy0479/devops-assessment/blob/main/images/github-pertoken.png "Github")
 
 ### Jenkins Configuration
 
@@ -101,18 +103,18 @@ This configuration will help us to report back the build status to Github after 
 
 7. Go to the Jenkins homepage and select **Manage Jenkins** --> **Configure System** --> **Github**
 
-    ![alt text](https://github.com/reddy0479/devops-assessment/blob/test/images/jenkins-github.png "Jenkins")
+    ![alt text](https://github.com/reddy0479/devops-assessment/blob/main/images/jenkins-github.png "Jenkins")
 
 8. Select the Username with Password option and then in the Username field enter your Github username and in the Password section enter the Personal Access Token generated from Step 3.6 and click Add at the bottom. 
 
     Finally Test Connection if everything configured properly we should see Credentials verified for user message. After this test don't forget to save this configuration by clicking the Save option at the end.
     
-    ![alt text](https://github.com/reddy0479/devops-assessment/blob/test/images/github-cred.png "Jenkins")
+    ![alt text](https://github.com/reddy0479/devops-assessment/blob/main/images/github-cred.png "Jenkins")
 
 
 ## Step 4: Push the code to repo and see the Continuous Delivery cycle.
 
-Finally create a simple hello-world nodejs applciation by cloning from this sampele repo https://github.com/reddy0479/sample-nodejs
+Finally create a simple hello-world nodejs application by cloning from this sample repo https://github.com/reddy0479/sample-nodejs
 
 Make any change to your code and when you push the code back to the Github a build will be triggered automatically in Jenkins server and it will report back the status to your Github repo.
 
@@ -132,4 +134,4 @@ Go to the commit section in your repo and you can see the build status of all th
 
 - PR Status
 
-     ![alt text](https://github.com/reddy0479/devops-assessment/blob/main/images/PR-check.png "Jenkins")
+     ![alt text](https://github.com/reddy0479/devops-assessment/blob/main/images/PR-Check.png "Jenkins")
